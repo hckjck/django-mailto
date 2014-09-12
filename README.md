@@ -44,7 +44,7 @@ is up and running within your project.
 
 ## Usage
 
-### `mailto(recipients, slug, language_code=settings.LANGUAGE_CODE, context={}, from_email=None, reply_to=None, cc=[], bcc=[], headers={}, attachments=[])`
+`mailto(recipients, slug, language_code=settings.LANGUAGE_CODE, context={}, from_email=None, reply_to=None, cc=[], bcc=[], headers={}, attachments=[])`
 
 Parameters:
 
