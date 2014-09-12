@@ -1,6 +1,6 @@
 # django-mailto
 
-django-mailto is a simple reusable Django app which enables you to send, manage and queue the sending of templated
+django-mailto is a simple reusable Django app, which enables you to send, manage and queue the sending of templated
 and multilingual emails.
 
 Queueing is an optional feature, which will be enabled when [celery - Distributed Task Queue](https://github.com/celery/celery) 
@@ -15,12 +15,12 @@ is up and running within your project.
 
 - simple interface `mailto(['test@localhost'], 'test')`
 - inline editing of HTML mails
-- queueing
+- send mails asynchron
 - Opt-In/-Out
 
 ## Getting started
 
-1. `pip install django-mailto`
+1. `pip install django-mailto --pre`
 
 2. Add `mailto` to your `INSTALLED_APPS` settings:
 
@@ -67,14 +67,11 @@ from mailto import mailto
 mailto(['test@localhost'], 'test')
 ```
 
-In case, Mail object with given slug, does not exist, it will be created with `active=False`, without sending. In order
-to provide an initial set of Mail objects specify `MAILTO_MAILS` setting in your settings file, which will be created on
-`syncdb`.
+In case, Mail object with given slug does not exist, it will be created with `active=False`, without sending. In order to provide an initial set of Mail objects specify `MAILTO_MAILS` setting in your settings file, which will be created on `syncdb`.
  
 ### In your templates 
 
-Load `mailtotags` into your template and define placeholders where content should be editable. An example minimal template
-with a simple footer would look like this (e.g. `mailto/simple_footer.html`):
+Load `mailtotags` into your template and define placeholders where content should be editable. A minimal template with a simple footer would look like this (e.g. `mailto/simple_footer.html`):
 
 ```
 {% extends 'mailto/base.html' %}
@@ -105,21 +102,19 @@ Thank you for treating this mail as confidential.
 
 ### Template rendering
 
-Template rendering  will be done with current `context_processor` setting in mind. This means, there is the same context
-available as in regular views.
-In case the recipients email address matches an existing user, than recipients User object will be add to `recipient`
-context variable. E.g. `{{ recipient.username }}` will return the User objects username.
+Template rendering  will be done with current `context_processor` setting in mind. This means, there is the same context available as in regular views.
+In case the recipients email address matches an existing user, than recipients User object will be added to `recipient` context variable. E.g. `{{ recipient.username }}` will return the User objects username.
 
 ### Opt-out URL
 
-To get the Opt-out URL for the current user use `{{ recipient.optin.get_optout_url }}`
+To get the Opt-out URL for the current user, use `{{ recipient.optin.get_optout_url }}`.
 
 ## Settings
 
 ### MAILTO_TEMPLATES
 
 django-mailto is shipped with a default set of email templates [thanks to *Antwort*](https://github.com/internations/antwort) but it
-is easy to setup your own
+is easy to setup your own.
 
 Default:
 
@@ -131,15 +126,13 @@ Default:
 )
 ```
 
-Additionally when a `mailto/default.txt` is available besides the `mailto/default.html` it will be taken as template for 
-plain body of your email.
+Additionally when a `mailto/default.txt` is available besides the `mailto/default.html` it will be taken as template for plain body of your email.
 
 ### MAILTO_MAILS
 
 Default: `None`
 
-Profile an initial set of Mail objects by settings a list or tuple of mail slugs. They will be crated on each syncdb if 
-not already existing.
+Provide an initial set of Mail objects by settings a list or tuple of mail slugs. They will be crated on each syncdb if not already existing.
 
 ```
 (
