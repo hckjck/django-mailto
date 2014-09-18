@@ -13,10 +13,6 @@ log = logging.getLogger(__name__)
 
 
 def mailto(*args, **kwargs):
-    """
-from mail import mailto
-mailto('foo', ['m@handerek.net', ])
-    """
     try:
         celery_status = get_celery_worker_status()
         if not celery_status:
