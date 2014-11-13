@@ -53,7 +53,7 @@ class UserOptin(models.Model):
     optin = models.BooleanField(_('Optin'), default=True)
     date_added = models.DateTimeField(_('Date added'), auto_now_add=True)
     date_changed = models.DateTimeField(_('Date changed'), auto_now=True)
-    hash = models.CharField(_('Hash'), max_length=32, unique=True, default=uuid.uuid4().hex)
+    hash = models.CharField(_('Hash'), max_length=32, unique=True)
 
     class Meta:
         verbose_name = _('Optin')
@@ -82,6 +82,7 @@ def create_user_optin(sender, **kwargs):
     if kwargs.get('created', False):
         user_optin = UserOptin()
         user_optin.user = kwargs.get('instance')
+        user_optin.hash = uuid.uuid4().hex
         user_optin.save()
 
 

@@ -13,12 +13,16 @@ from mailto.models import UserOptin, Mail
 class OptinCreationTest(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create(username='test')
+        self.user0 = User.objects.create(username='test0')
+        self.user1 = User.objects.create(username='test1')
         self.client = Client()
 
     def test_has_optin(self):
-        self.assertIsInstance(self.user.optin, UserOptin)
-        self.assertTrue(self.user.optin.optin)
+        self.assertIsInstance(self.user0.optin, UserOptin)
+        self.assertTrue(self.user0.optin.optin)
+
+        self.assertIsInstance(self.user1.optin, UserOptin)
+        self.assertTrue(self.user1.optin.optin)
 
 
 class MailtoNewMailTest(TestCase):
