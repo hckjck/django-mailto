@@ -27,6 +27,10 @@ class OptinCreationTest(TestCase):
 
 class MailtoNewMailTest(TestCase):
 
+    def test_mailto_empty(self):
+        self.assertIsNone(mailto([], 'test'))
+        self.assertRaises(TypeError, mailto(None, 'test'))
+
     def test_mailto_with_new_mail(self):
         mailto(['test@localhost'], 'test')
 

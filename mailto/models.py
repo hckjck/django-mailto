@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+from types import ListType
 import uuid
 
 from django.conf import settings
@@ -266,9 +267,16 @@ class Mail(models.Model):
 
 
 def mailto(recipients, slug, language_code=settings.LANGUAGE_CODE, context={}, **kwargs):
+    if not recipients:
+        return
+    if type(recipients) is not ListType:
+        raise TypeError('recipients of type List expected')
+    if len(recipients) == 0:
+        return
+
     try:
         context['recipient'] = User.objects.get(email__iexact=recipients[0])
-    except ObjectDoesNotExist, IndexError:
+    except ObjectDoesNotExist:
         context['recipient'] = User(email=recipients[0])
 
     mail = Mail.register(slug, language_code)
