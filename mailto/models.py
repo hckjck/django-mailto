@@ -219,7 +219,7 @@ class Mail(models.Model):
             return
 
         recipient_emails = UserOptin.get_emails(recipients)
-        if not recipient_emails or len(recipient_emails) == 0:
+        if not recipient_emails:
             return
 
         mail_kwargs = {
@@ -271,10 +271,6 @@ class Mail(models.Model):
 
 def mailto(recipients, slug, language_code=settings.LANGUAGE_CODE, context={}, **kwargs):
     if not recipients:
-        return
-    if type(recipients) is not ListType:
-        raise TypeError('recipients of type List expected')
-    if len(recipients) == 0:
         return
 
     try:
