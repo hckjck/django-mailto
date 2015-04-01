@@ -218,3 +218,20 @@ class MailtoTest(TestCase):
         self.assertEqual(mail.outbox[0].extra_headers.get('header1'), 'header_value_1')
         self.assertEqual(mail.outbox[0].extra_headers.get('Reply-To'), 'reply-to@localhost')
         self.assertEqual(mail.outbox[0].attachments, [('mail.js', '/static/js/mail.js', 'text/javascript')])
+
+    def test_send_email_indiviual_mail(self):
+        self.mail.active = True
+        self.mail.plain = 'Hello {{ recipient.email }}'
+        self.mail.save()
+
+        user2 = User.objects.create(username='test2', email='test2@localhost')
+
+        mailto(['test@localhost', 'test2@localhost', ], 'test')
+
+        self.assertIs(len(mail.outbox), 2)
+
+        self.assertIn(user2.email, mail.outbox[0].body)
+        self.assertEqual(mail.outbox[0].to, [user2.email])
+
+        self.assertIn(self.user.email, mail.outbox[1].body)
+        self.assertEqual(mail.outbox[1].to, [self.user.email])
