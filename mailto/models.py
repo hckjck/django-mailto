@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-from types import ListType
 import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, get_connection
 from django.core.mail.message import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
 from django.db import models
@@ -35,6 +34,7 @@ LANGUAGE_CHOICES = sorted(settings.LANGUAGES, key=lambda i: i[1])
 def get_request(url='/'):
     """
     Returns fake HttpRequest object for rendering purpose.
+
     """
     defaults = {}
 
@@ -121,6 +121,7 @@ class Mail(models.Model):
     def register(cls, slug, language_code=settings.LANGUAGE_CODE):
         """
         Get and/or create Mail object.
+
         """
         try:
             mail = cls.objects.get(slug=slug, language_code=language_code)
@@ -137,6 +138,7 @@ class Mail(models.Model):
     def get_subject(self, context):
         """
         Returns rendered subject.
+
         """
         tpl = Template(self.subject)
         ctx = RequestContext(get_request(), context)
@@ -145,6 +147,7 @@ class Mail(models.Model):
     def get_plain_content(self, context):
         """
         Returns rendered plain email body.
+
         """
         tpl = Template(self.plain)
         ctx = RequestContext(get_request(), context)
@@ -169,6 +172,7 @@ class Mail(models.Model):
     def get_html_content(self, context):
         """
         Returns rendered HTML email body.
+
         """
         if not self.html:
             return None
@@ -187,6 +191,7 @@ class Mail(models.Model):
     def get_from_email(self):
         """
         Returns email address with name.
+
         """
         if self.sender_name:
             return '%s <%s>' % (self.sender_name, self.sender_email)
@@ -196,6 +201,7 @@ class Mail(models.Model):
     def get_cc_recipients(self):
         """
         Returns list of cc recipients.
+
         """
         if not self.cc:
             return []
@@ -205,15 +211,17 @@ class Mail(models.Model):
     def get_bcc_recipeints(self):
         """
         Return list of bcc recipients.
+
         """
         if not self.bcc:
             return []
 
         return [bcc.strip() for bcc in self.bcc.split(',')]
 
-    def send(self, recipients, context=None, from_email=None, reply_to=None, cc=[], bcc=[], headers={}, attachments=[]):
+    def send(self, recipients, **kwargs):
         """
         Constructs and sends message.
+
         """
         if not self.active:
             return
@@ -222,45 +230,70 @@ class Mail(models.Model):
         if not recipient_emails:
             return
 
-        mail_kwargs = {
-            'from_email': from_email if from_email else self.get_from_email(),
-            'to': recipient_emails,
-            'cc': self.get_cc_recipients() + cc if cc else self.get_cc_recipients(),
-            'bcc': self.get_bcc_recipeints() + bcc if bcc else self.get_bcc_recipeints(),
-            'headers': headers,
-            'attachments': attachments
-        }
+        # open one connection for multiple mails
+        connection = get_connection()
+        connection.open()
 
-        if self.reply_to:
-            mail_kwargs['headers']['Reply-To'] = reply_to if reply_to else self.reply_to
+        from_email = kwargs.get('from_email', None)
+        reply_to = kwargs.get('reply_to', None)
+        cc = kwargs.get('cc', [])
+        bcc = kwargs.get('bcc', [])
+        headers = kwargs.get('headers', {})
+        attachments = kwargs.get('attachments', [])
 
-        current_language = get_language()
-        activate(self.language_code)
+        for recipient_email in recipient_emails:
+            context = kwargs.get('context', None)
 
-        mail_kwargs['subject'] = self.get_subject(context)
+            # get user context
+            try:
+                context['recipient'] = User.objects.get(email__iexact=recipient_email)
+            except ObjectDoesNotExist:
+                context['recipient'] = User(email=recipient_email)
 
-        context.update({
-            'subject': mail_kwargs['subject']
-        })
+            mail_kwargs = {
+                'from_email': from_email if from_email else self.get_from_email(),
+                'to': [recipient_email, ],
+                'cc': self.get_cc_recipients() + cc if cc else self.get_cc_recipients(),
+                'bcc': self.get_bcc_recipeints() + bcc if bcc else self.get_bcc_recipeints(),
+                'headers': headers,
+                'attachments': attachments,
+                'connection': connection,
+            }
 
-        mail_kwargs['body'] = self.get_plain_content(context)
+            if self.reply_to:
+                mail_kwargs['headers']['Reply-To'] = reply_to if reply_to else self.reply_to
 
-        html = self.get_html_content(context)
-        if html:
-            mail_kwargs['alternatives'] = [(html, 'text/html'), ]
+            current_language = get_language()
+            activate(self.language_code)
 
-        activate(current_language)
+            mail_kwargs['subject'] = self.get_subject(context)
 
-        if mail_kwargs:
-            email = EmailMultiAlternatives(**mail_kwargs)
-        else:
-            email = EmailMessage(**mail_kwargs)
+            context.update({
+                'subject': mail_kwargs['subject']
+            })
 
-        email.send()
+            mail_kwargs['body'] = self.get_plain_content(context)
+
+            html = self.get_html_content(context)
+            if html:
+                mail_kwargs['alternatives'] = [(html, 'text/html'), ]
+
+            activate(current_language)
+
+            if mail_kwargs:
+                email = EmailMultiAlternatives(**mail_kwargs)
+            else:
+                email = EmailMessage(**mail_kwargs)
+
+            email.send()
+
+        # finally close connection
+        connection.close()
 
     def preview_html(self):
         """
         Returns rendered HTML email body for preview.
+
         """
         tpl = get_template(self.template)
         ctx = RequestContext(get_request(), {
@@ -273,10 +306,5 @@ def mailto(recipients, slug, language_code=settings.LANGUAGE_CODE, context={}, *
     if not recipients:
         return
 
-    try:
-        context['recipient'] = User.objects.get(email__iexact=recipients[0])
-    except ObjectDoesNotExist:
-        context['recipient'] = User(email=recipients[0])
-
     mail = Mail.register(slug, language_code)
-    mail.send(recipients, context, **kwargs)
+    mail.send(recipients, context=context, **kwargs)
