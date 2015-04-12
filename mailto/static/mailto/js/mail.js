@@ -30,14 +30,14 @@ mail.Admin = {
         }
     },
 
-    onCKEReady: function(self){
-        return function(e){
+    onCKEReady: function (self) {
+        return function (e) {
             self.ajdustFrameHeight();
         }
     },
 
-    onCKEInstanceChange: function(self){
-        return function(e){
+    onCKEInstanceChange: function (self) {
+        return function (e) {
             self.ajdustFrameHeight();
         }
     },
@@ -57,7 +57,7 @@ mail.Admin = {
 
     ajdustFrameHeight: function () {
         var h = this.frame.contentWindow.document.body.offsetHeight
-        django.jQuery('iframe').height(h);
+        django.jQuery('iframe').height(h + 15);
     }
 
 };

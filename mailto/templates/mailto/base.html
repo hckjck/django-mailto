@@ -16,7 +16,7 @@
         {% block body %}{% endblock %}
 
         {% if user.is_superuser %}
-        <script type="text/javascript" src="{% static 'mailto/js/lib/ckeditor/ckeditor.js' %}"></script>
+        <script type="text/javascript" src="//cdn.ckeditor.com/4.4.7/standard/ckeditor.js"></script>
         {% endif %}
 
         {% block extra_body %}{% endblock %}
