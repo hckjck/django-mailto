@@ -7,14 +7,26 @@ mail.Admin = {
 
     init: function () {
         this.frame = window.frames['html'];
+        this.$form = django.jQuery('form');
+
         django.jQuery(this.frame).on('load', this.onFrameLoad(this));
-        django.jQuery('form').on('submit', this.onSubmit(this));
+        this.$form.on('submit', this.onSubmit(this));
+        django.jQuery('select[name="template"]', this.$form).on('change', this.onChangeTemplate(this));
+    },
+
+    save: function(){
+        this.$form.trigger('submit');
+    },
+
+    saveContinue: function(){
+        this.$form.append('<input type="hidden" name="_continue" value="" />');
+        this.save();
     },
 
     onSubmit: function (self) {
         return function (e) {
             self.extractData();
-        }
+        };
     },
 
     onFrameLoad: function (self) {
@@ -27,19 +39,27 @@ mail.Admin = {
             for (var i in self.cke.instances) {
                 self.cke.instances[i].on('change', self.onCKEInstanceChange(self));
             }
-        }
+        };
     },
 
     onCKEReady: function (self) {
         return function (e) {
             self.ajdustFrameHeight();
-        }
+        };
     },
 
     onCKEInstanceChange: function (self) {
         return function (e) {
             self.ajdustFrameHeight();
-        }
+        };
+    },
+
+    onChangeTemplate: function (self) {
+        return function (e) {
+            if (confirm('Are you sure? All changes will be saved too.')) {
+                self.saveContinue();
+            }
+        };
     },
 
     extractData: function () {
