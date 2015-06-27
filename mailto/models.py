@@ -178,7 +178,11 @@ class Mail(models.Model):
             return None
 
         base_context = context
-        base_context.update(json.loads(self.html))
+        html_context = json.loads(self.html)
+        if not html_context:
+            return None
+
+        base_context.update(html_context)
 
         base_ctx = RequestContext(get_request(), base_context)
         base_tpl = get_template(self.template)
