@@ -3,8 +3,10 @@ from urlparse import urlparse
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 from django.core import mail
 from django.test import TestCase, Client
+import mock
 
 from mailto import mailto
 from mailto.models import UserOptin, Mail
@@ -62,6 +64,7 @@ class MailtoNewMailTest(TestCase):
 class MailtoTest(TestCase):
 
     def setUp(self):
+        self.site = Site.objects.create(domain='localhost', name='localhost')
         self.user = User.objects.create(username='test', email='test@localhost')
         mailto(['test@localhost'], 'test')
         self.mail = Mail.objects.get(slug='test', language_code=settings.LANGUAGE_CODE)
@@ -74,7 +77,9 @@ class MailtoTest(TestCase):
 
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_send_active(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_active(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.save()
 
@@ -90,7 +95,70 @@ class MailtoTest(TestCase):
         self.assertEqual(mail.outbox[0].alternatives, [])
         self.assertEqual(mail.outbox[0].extra_headers, {})
 
-    def test_send_active_with_optin(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_active_html(self, mock_get_current):
+        mock_get_current.return_value = self.site
+        self.mail.active = True
+
+        # test invalid html
+        self.mail.html = 'test html'
+        self.mail.save()
+
+        with self.assertRaises(ValueError):
+            mailto(['test@localhost'], 'test')
+        self.assertEqual(len(mail.outbox), 0)
+
+        # test empty object
+        self.mail.html = None
+        self.mail.save()
+
+        mailto(['test@localhost'], 'test')
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, 'test')
+        self.assertEqual(mail.outbox[0].body, 'test')
+        self.assertEqual(mail.outbox[0].to, ['test@localhost'])
+        self.assertEqual(mail.outbox[0].from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(mail.outbox[0].cc, [])
+        self.assertEqual(mail.outbox[0].bcc, [])
+        self.assertEqual(mail.outbox[0].alternatives, [])
+        self.assertEqual(mail.outbox[0].extra_headers, {})
+
+        # test empty object
+        self.mail.html = '{}'
+        self.mail.save()
+
+        mailto(['test@localhost'], 'test')
+
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(mail.outbox[1].subject, 'test')
+        self.assertEqual(mail.outbox[1].body, 'test')
+        self.assertEqual(mail.outbox[1].to, ['test@localhost'])
+        self.assertEqual(mail.outbox[1].from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(mail.outbox[1].cc, [])
+        self.assertEqual(mail.outbox[1].bcc, [])
+        self.assertEqual(mail.outbox[1].alternatives, [])
+        self.assertEqual(mail.outbox[1].extra_headers, {})
+
+        # test valid html
+        self.mail.html = '{"foo": "bar"}'
+        self.mail.save()
+
+        mailto(['test@localhost'], 'test')
+
+        self.assertEqual(len(mail.outbox), 3)
+        self.assertEqual(mail.outbox[2].subject, 'test')
+        self.assertEqual(mail.outbox[2].body, 'test')
+        self.assertEqual(mail.outbox[2].to, ['test@localhost'])
+        self.assertEqual(mail.outbox[2].from_email, settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(mail.outbox[2].cc, [])
+        self.assertEqual(mail.outbox[2].bcc, [])
+        self.assertEqual(len(mail.outbox[2].alternatives), 1)
+        self.assertEqual(mail.outbox[2].extra_headers, {})
+
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_active_with_optin(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.save()
 
@@ -101,7 +169,9 @@ class MailtoTest(TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_send_inactive_with_optin(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_inactive_with_optin(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = False
         self.mail.save()
 
@@ -123,7 +193,9 @@ class MailtoTest(TestCase):
 
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_send_cc_recipients(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_cc_recipients(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.cc = 'cc1@localhost, cc2@localhost,cc3@localhost'
         self.mail.save()
@@ -140,7 +212,9 @@ class MailtoTest(TestCase):
         self.assertEqual(mail.outbox[0].alternatives, [])
         self.assertEqual(mail.outbox[0].extra_headers, {})
 
-    def test_send_bcc_recipients(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_bcc_recipients(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.bcc = 'bcc1@localhost, bcc2@localhost,bcc3@localhost'
         self.mail.save()
@@ -157,7 +231,9 @@ class MailtoTest(TestCase):
         self.assertEqual(mail.outbox[0].alternatives, [])
         self.assertEqual(mail.outbox[0].extra_headers, {})
 
-    def test_send_reply_to(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_reply_to(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.reply_to = 'noreply@localhost'
         self.mail.save()
@@ -176,7 +252,9 @@ class MailtoTest(TestCase):
             'Reply-To': 'noreply@localhost'
         })
 
-    def test_send_email_address_with_name(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_email_address_with_name(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.sender_name = 'John Doe'
         self.mail.save()
@@ -193,7 +271,9 @@ class MailtoTest(TestCase):
         self.assertEqual(mail.outbox[0].alternatives, [])
         self.assertEqual(mail.outbox[0].extra_headers, {})
 
-    def test_send_email_with_kwargs(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_email_with_kwargs(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.reply_to = 'noreply@localhost'
         self.mail.cc = 'cc@localhost'
@@ -219,7 +299,9 @@ class MailtoTest(TestCase):
         self.assertEqual(mail.outbox[0].extra_headers.get('Reply-To'), 'reply-to@localhost')
         self.assertEqual(mail.outbox[0].attachments, [('mail.js', '/static/js/mail.js', 'text/javascript')])
 
-    def test_send_email_indiviual_mail(self):
+    @mock.patch('django.contrib.sites.models.Site.objects.get_current')
+    def test_send_email_indiviual_mail(self, mock_get_current):
+        mock_get_current.return_value = self.site
         self.mail.active = True
         self.mail.plain = 'Hello {{ recipient.email }}'
         self.mail.save()

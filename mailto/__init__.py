@@ -19,5 +19,5 @@ def mailto(*args, **kwargs):
             raise Exception
         task_mailto.apply_async((args, kwargs))
     except Exception as e:
-        log.warn(e)
+        log.info(e)
         _mailto(*args, **kwargs)
