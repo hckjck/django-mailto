@@ -103,7 +103,7 @@ def find_package_data(where='.', package='',
 setup(
     name='django-mailto',
     description='Django app to send, manage and queue multilingual mails with template support.',
-    version='0.1.0b',
+    version='0.1.0',
     author='Michael Handerek',
     author_email='michael@handerek.net',
     url='https://github.com/hckjck/django-mailto',
@@ -114,7 +114,7 @@ setup(
     packages=find_packages(),
     package_data=find_package_data(),
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',

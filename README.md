@@ -20,7 +20,7 @@ is up and running within your project.
 
 ## Getting started
 
-1. `pip install django-mailto --pre`
+1. `pip install django-mailto`
 
 2. Add `mailto` to your `INSTALLED_APPS` settings:
 
